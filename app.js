@@ -106,60 +106,67 @@ router.get('/:timestamp', function(ts) {
 router.get('/read/:board/:article', function(board, article) {
 	var res = this.res;
 	jsdom.env("http://localhost/crawl/converter.php?timestamp="+new Date().getTime()+"&board="+board+"&article="+article, function (errors, window) {
-		var data = [];
+
+		var timestamp = article.match(/M.[^.A]*/)[0].replace(/M./g, "");
+        var date = toDate(timestamp);
 
 		var target = window.document.getElementById('mainContent');
-		var body = target.children[1].getElementsByTagName('pre')[0].innerHTML;
-		
-		//youtube player
-        body = body.replace(/\<div><iframe class="youtube-player" type="text\/html" width="640" height="385"/g, '<div class="embed-container"><iframe type="text/html"');
+		if(target == null) {
+			console.log("Error Occured: "+board+"/"+article);
+			var stream = mu.compileAndRender('error.html', {date: date, timestamp: timestamp});
+			util.pump(stream, res);
+			return ;
+		} else {
+			var body = target.children[1].getElementsByTagName('pre')[0].innerHTML;
+			
+			//youtube player
+	        body = body.replace(/\<div><iframe class="youtube-player" type="text\/html" width="640" height="385"/g, '<div class="embed-container"><iframe type="text/html"');
 
-        //xuite player
-        var xuiteId = new Array();
-        xuiteId = body.match(/vlog.xuite.net\/play\/[^"]*/);
-        if(xuiteId) {
-          for(var i=0;i<xuiteId.length;i++) {
-            var id = xuiteId[i].replace("vlog.xuite.net/play/", "")
-            var xuitePlayer = "<div class='embed-container'><iframe marginwidth='0' marginheight='0' src='http://vlog.xuite.net/embed/"+id+"?ar=0&as=0' scrolling='no' frameborder='0'></iframe></div>";
-            body = body.replace(id+"</a>", id+"</a>\n"+xuitePlayer);
-          }
-        }
+	        //xuite player
+	        var xuiteId = new Array();
+	        xuiteId = body.match(/vlog.xuite.net\/play\/[^"]*/);
+	        if(xuiteId) {
+	          for(var i=0;i<xuiteId.length;i++) {
+	            var id = xuiteId[i].replace("vlog.xuite.net/play/", "")
+	            var xuitePlayer = "<div class='embed-container'><iframe marginwidth='0' marginheight='0' src='http://vlog.xuite.net/embed/"+id+"?ar=0&as=0' scrolling='no' frameborder='0'></iframe></div>";
+	            body = body.replace(id+"</a>", id+"</a>\n"+xuitePlayer);
+	          }
+	        }
 
-        //image preview
-        $.fn.exists = function(){return this.length>0;}
-        var imgLink = new Array();
-        imgLink = body.match(/href="[^"]*/g);
-        if(imgLink) {
-          for(var i=0;i<imgLink.length;i++) {
-            var url = imgLink[i].replace(/\href="/g, "");
-            if($("<img src='"+url+"'>").exists()) {
-              var appendImage;
-              if(url.search("ppt.cc") != -1) {
-                appendImage = url+"</a>\n<img src='"+url+"@.jpg'>";
-              }
-              else
-                appendImage = url+"</a>\n<img src='"+url+"'>";
+	        //image preview
+	        $.fn.exists = function(){return this.length>0;}
+	        var imgLink = new Array();
+	        imgLink = body.match(/href="[^"]*/g);
+	        if(imgLink) {
+	          for(var i=0;i<imgLink.length;i++) {
+	            var url = imgLink[i].replace(/\href="/g, "");
+	            if($("<img src='"+url+"'>").exists()) {
+	              var appendImage;
+	              if(url.search("ppt.cc") != -1) {
+	                appendImage = url+"</a>\n<img src='"+url+"@.jpg'>";
+	              }
+	              else
+	                appendImage = url+"</a>\n<img src='"+url+"'>";
 
-              body = body.replace(url+"</a>", appendImage);
-            }
-          }
-        }
+	              body = body.replace(url+"</a>", appendImage);
+	            }
+	          }
+	        }
 
-        var tmp, title;
-        if(tmp = body.match(/標題:[^\n]*/))title = tmp[0].replace(/標題: /g, "");
-        else title = body.match(/標題[^\n]*/)[0].replace(/標題 /g, "");
+	        var tmp, title;
+	        if(tmp = body.match(/標題:[^\n]*/))title = tmp[0].replace(/標題: /g, "");
+	        else title = body.match(/標題[^\n]*/)[0].replace(/標題 /g, "");
 
-        var timestamp = article.match(/M.[^.A]*/)[0].replace(/M./g, "");
-        var date = toDate(timestamp);
-		var stream = mu.compileAndRender('read.html', {
-			date: date,
-			timestamp: timestamp,
-			board: board,
-			title: title,
-			article: article,
-			body: body
-		});
-		util.pump(stream, res);
+			var stream = mu.compileAndRender('read.html', {
+				date: date,
+				timestamp: timestamp,
+				board: board,
+				title: title,
+				article: article,
+				body: body
+			});
+			util.pump(stream, res);
+		}
 	});
 });
 
