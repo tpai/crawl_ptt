@@ -14,7 +14,7 @@
 		    height: 67px;
 		    position: fixed;
 		    bottom: 10px;
-		    left: 0px;
+		    right: 0px;
 		    display: none;
 		    text-indent: -9999px;
 		    background: url('http://i.imgur.com/VnRpC.png') no-repeat;
@@ -58,6 +58,7 @@
  
         $('.scrollup').click(function(){
             $("html, body").animate({ scrollTop: 0 }, 600);
+            $('.scrollup').blur();
             return false;
         });
  

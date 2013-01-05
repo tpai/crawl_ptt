@@ -12,7 +12,7 @@ var http = require('http'),
     mongodb = require('mongodb'),
     mongodbServer = new mongodb.Server('localhost', dbport, { safe: false }),
 	boards = ["Beauty", "movie", "StupidClown", "joke", "C_Chat"], //custom
-	beforeDays = 2, //custom
+	beforeDays = 1, //custom
 	pushIWant = 30, //custom
 	cronTime = "00 10 00 * * *"; //custom
 	
@@ -58,20 +58,25 @@ var router = new director.http.Router();
 
 router.get('/', function() {
 	var res = this.res;
-	var dateArr = [];
+
 	var tmpArr = [];
+	var dateArr = [];
 	collection.find({}).toArray(function(err, data) {
 		$.each(data, function(key, val) {
 
-			tmpArr.push(val.date);
+			if(val.date != undefined) {
+				tmpArr.push(val.date);
+			}
 
 			if(key == data.length - 1) {
-				
-				$.each($.unique(tmpArr), function(k, v) {
-					
+
+				tmpArr = $.unique(tmpArr).sort(desc);
+
+				$.each(tmpArr, function(k, v) {
+
 					dateArr.push({date: v, timestamp: toTimestamp(v)});
 					
-					if(k == $.unique(tmpArr).length - 1) {
+					if(k == tmpArr.length - 1) {
 						var stream = mu.compileAndRender('index.html', {data: dateArr});
 						util.pump(stream, res);
 					}
@@ -211,6 +216,13 @@ var fetchPosts = function(url, callback) {
       }
     }
   );
+};
+
+var desc = function(x,y) {
+	if (x > y) 
+	return -1;
+	if (x < y) 
+	return 1;
 };
 
 var patchZero = function(num, offset) {
