@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>PTT日報＞{{date}}</title>
+	<script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+	<SCRIPT type="text/javascript" src="http://www.google.com/jsapi"></SCRIPT>
+	<link href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
+	<link href="http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css" rel="stylesheet" type="text/css" />
+	<script src="http://twitter.github.com/bootstrap/assets/js/bootstrap.js"></script>
+	<style type="text/css">
+		.scrollup{
+		    width: 67px;
+		    height: 67px;
+		    position: fixed;
+		    bottom: 10px;
+		    left: 0px;
+		    display: none;
+		    text-indent: -9999px;
+		    background: url('http://i.imgur.com/VnRpC.png') no-repeat;
+		}
+	</style>
+</head>
+<body>
+  <table class="table table-bordered">
+    <tr><th colspan="3"><h2><a href="/">PTT日報</a>＞{{date}}</h2></th></tr>
+    <tr><th colspan="3">
+    	<ul class="nav nav-pills">
+    		{{#data}}
+			<li><a href="#{{board}}"><h3>{{board}}</h3></a></li>
+			{{/data}}
+		</ul>
+    </th></tr>
+    {{#data}}
+		<tr><th colspan='3'>
+			<a name="{{board}}"><h3>{{board}}</h3></a>
+		</th></tr>
+		{{#posts}}
+			<tr>
+				<td><center><h4>{{id}}</h4></center></td>
+				<td><center><h4>{{{push}}}</h4></center></td>
+				<td><h4><a id='{{id}}' href='{{link}}'>{{title}}</a></h4></td>
+			</tr>
+		{{/posts}}
+	{{/data}}
+  </table>
+  <a href="#" class="scrollup">Scroll</a>
+  <script type="text/javascript">
+    $(document).ready(function(){ 
+ 
+        $(window).scroll(function(){
+            if ($(this).scrollTop() > 100) {
+                $('.scrollup').fadeIn();
+            } else {
+                $('.scrollup').fadeOut();
+            }
+        }); 
+ 
+        $('.scrollup').click(function(){
+            $("html, body").animate({ scrollTop: 0 }, 600);
+            return false;
+        });
+ 
+    });
+</script>
+</body>
