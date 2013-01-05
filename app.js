@@ -93,9 +93,10 @@ router.get('/:timestamp', function(ts) {
 			$.each(val.posts, function(k, v) {
 				var arr = v.link.split("/");
 				v.link = "/read/"+arr[arr.length-2]+"/"+arr[arr.length-1];
+				if(v.push >= 100)v.push = "<font color='red'>爆</font>";
 			})
 			if(key == data.length - 1) {
-				var stream = mu.compileAndRender('news.html', {date: toDate(ts), data: data});
+				var stream = mu.compileAndRender('news.html', {date: toDate(ts), timestamp: ts, data: data});
 				util.pump(stream, res);
 			}
 		})
