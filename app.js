@@ -70,7 +70,7 @@ router.get('/', function() {
 
 			if(key == data.length - 1) {
 
-				tmpArr = $.unique(tmpArr).sort(desc);
+				tmpArr = getUnique(tmpArr).sort(desc);
 
 				$.each(tmpArr, function(k, v) {
 
@@ -155,7 +155,8 @@ router.get('/read/:board/:article', function(board, article) {
 
 	        var tmp, title;
 	        if(tmp = body.match(/標題:[^\n]*/))title = tmp[0].replace(/標題: /g, "");
-	        else title = body.match(/標題[^\n]*/)[0].replace(/標題 /g, "");
+	        //else title = body.match(/標題[^\n]*/)[0].replace(/標題 /g, "");
+	        else title = "null";
 
 			var stream = mu.compileAndRender('read.html', {
 				date: date,
@@ -217,7 +218,8 @@ var fetchPosts = function(url, callback) {
         totalPage = window.document.getElementById('prodlist').children[0].innerHTML.match(/ [0-9]{3,4} /)[0].replace(/ /g, "");
       }
       totalPage -= 1;
-
+	
+	  //rescursive
       if(stop == false) {
         fetchPosts(url.split("index")[0]+"index"+totalPage+".html", callback);
         //console.log(url.split("index")[0]+"index"+totalPage+".html");
@@ -258,12 +260,25 @@ var daysInMonth = function(month, year) {
   return new Date(year, month, 0).getDate();
 };
 
+var getUnique = function(arr) {
+    var que = [];
+    for(var i = 0; i < arr.length; i++) {
+        for(var j = i + 1; j < arr.length; j++) {
+          if(arr[i] === arr[j]) j = ++i;
+        }
+        que.push(arr[i]);
+    }
+    return que;
+};
+
 
 var cronJob = require('cron').CronJob;
 try {
   new cronJob({
     cronTime: cronTime,
-	    onTick: routine,
+	    onTick: function() {
+	    	routine();
+	    },
     start: true,
     timeZone: "Asia/Taipei"
   })
