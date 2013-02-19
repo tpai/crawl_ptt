@@ -1,17 +1,19 @@
 {
- "name": "crawl_ptt",
- "version": "1.0.0",
- "private": true,
- "dependencies": {
-  "http": "0.0.0",
-  "util": ">= 0.4.9",
-  "director": ">= 1.1.9",
-  "jsdom": ">= 0.3.4",
-  "jquery": ">= 1.8.3",
-  "mongodb": ">= 1.2.7",
-  "mu2": ">= 0.5.17",
-  "cron": ">= 1.0.1",
-  "time": ">= 0.8.3",
-  "async": ">= 0.1.22"
- }
+	"name": "crawl_ptt",
+	"version": "1.1",
+	"private": true,
+	"dependencies": {
+		"http": "0.0.0",
+		"util": ">= 0.4.9",
+		"director": ">= 1.1.9",
+		"send": ">= 0.1.0",
+		"url": ">= 0.7.9",
+		"mu2": ">= 0.5.17",
+		"jquery": ">= 1.8.3",
+		"jsdom": ">= 0.3.4",
+		"cron": ">= 1.0.1",
+		"time": ">= 0.8.3",
+		"async": ">= 0.1.22",
+		"mongodb": ">= 1.2.7"
+	}
 }

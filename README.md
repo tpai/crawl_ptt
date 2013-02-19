@@ -1,17 +1,13 @@
 crawl_ptt
-=========
-
+==========
 filter posts by amount of push from web ptt
 
-±qºô­¶ª©PTT¤W¦Uª©¶ôÂ^¨ú¯S©w±À¤å¼Æ¥H¤Wªº¤å³¹
+å¾ç¶²é ç‰ˆPTTä¸Šå„ç‰ˆå¡Šæ“·å–ç‰¹å®šæ¨æ–‡æ•¸ä»¥ä¸Šçš„æ–‡ç« 
 
-* * *
+##Installation
 
-####First setup:
-
-* setup apache server (support php)
-* place all data into www folder
-* run 'npm install' to download modules
+* find a apache server (support php), and place 'converter.php' into it. (big5 to utf8 problem)
+* download modules by 'npm install'
 * uncomment first fetching like below:
 
         //first fetching
@@ -20,15 +16,14 @@ filter posts by amount of push from web ptt
 
 * then node app.js
 
-####­º¦¸¦w¸Ë:
+##å®‰è£æµç¨‹
 
-* ¥ı¸Ë¦nºô­¶¦øªA¾¹ (¶·¤ä´©PHP)
-* ±N©Ò¦³ÀÉ®×©ñ¤J www/
-* °õ¦æ 'npm install' ¤U¸ü®M¥ó
-* ±Nµù¸Ñ®³±¼ ¦p¤U©Ò¥Ü
+* å…ˆæ‰¾å€‹ç¶²é ä¼ºæœå™¨ (é ˆæ”¯æ´PHP), ç„¶å¾Œå°‡ converter.php æ”¾å…¥. (big5 to utf8ç·¨ç¢¼è½‰æ›å•é¡Œ)
+* åŸ·è¡Œ 'npm install' ä¸‹è¼‰å¥—ä»¶
+* å°‡è¨»è§£æ‹¿æ‰ å¦‚ä¸‹æ‰€ç¤º
 
         //first fetching
         initialVars();
         routine();
 
-* °õ¦æapp.js
+* åŸ·è¡Œapp.js

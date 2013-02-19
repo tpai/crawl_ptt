@@ -1,0 +1,86 @@
+.header {
+	font-size: 26px;
+	line-height: 36px;
+}
+.datey {
+	text-align: right;
+	color: darkgreen;
+	font-size: 8px;
+	line-height: 8px;
+}
+.datem {
+	text-align: center;
+	color: orange;
+	font-size: 12px;
+	line-height: 16px;
+}
+.dated {
+	text-align: center;
+	font-size: 38px;
+	line-height: 40px;
+}
+a {
+	color: #1E90FF;
+}
+.square, .square a {
+	color: white;
+	width: 68px;
+	height: 68px;
+	background-color: #1E90FF;
+}
+.square:hover a {
+	color: black;
+	background-color: #EEEEEE;
+}
+.table td:hover {
+	background-color: #9ACD32;
+}
+.title {
+	font-size: 20px;
+	line-height: 30px;
+	color: black;
+}
+.boards {
+	font-size: 24px;
+	line-height: 34px;
+}
+pre {
+	font-weight: normal;
+	font-size: 18px;
+	font-family: "標楷體", serif;
+}
+/* Responsive Image */
+img {
+	max-width: 100%;
+	height: auto;
+}
+@media \0screen {
+	img { 
+		width: auto; /* for ie 8 */
+	}
+}
+/* Responsive Video */
+.embed-container {
+	position: relative;
+	padding-bottom: 56.25%;/* 16/9 ratio */
+	padding-top: 30px;/* IE6 workaround*/
+	height: 0;
+	overflow: hidden;
+}
+.embed-container iframe, .embed-container object, .embed-container embed {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+.scrollup{
+	width: 67px;
+	height: 67px;
+	position: fixed;
+	bottom: 10px;
+	right: 0px;
+	display: none;
+	text-indent: -9999px;
+	background: url('http://i.imgur.com/VnRpC.png') no-repeat;
+}

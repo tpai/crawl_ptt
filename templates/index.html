@@ -3,76 +3,59 @@
 <head>
 	<title>PTT日報</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta property="og:title" content="PTT日報"/>
 	<meta property="og:type" content="article"/>
-	<meta property="og:url" content="http://tonypai.twbbs.org:8000/"/>
+	<meta property="og:url" content="http://tonypai.twbbs.org:977/"/>
 	<meta property="og:image" content="http://i.imgur.com/WqMOg.png"/>
 	<meta property="og:site_name" content="PTT日報"/>
 	
-	<script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
-	<SCRIPT type="text/javascript" src="http://www.google.com/jsapi"></SCRIPT>
-	<link href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
-	<link href="http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css" rel="stylesheet" type="text/css" />
-	<script src="http://twitter.github.com/bootstrap/assets/js/bootstrap.js"></script>
+	<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+	<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js"></script>
+	<!-- custom settings -->
+	<link href="/assets/custom.css" rel="stylesheet">
+	<script src="/assets/scroller.js"></script>
 	<style type="text/css">
-		.scrollup{
-		    width: 67px;
-		    height: 67px;
-		    position: fixed;
-		    bottom: 10px;
-		    left: 0px;
-		    display: none;
-		    text-indent: -9999px;
-		    background: url('http://i.imgur.com/VnRpC.png') no-repeat;
+		body {
+			height: 1000px;
+		}
+		.nav-pills li.square {
+			padding-right: 6px;
+			padding-bottom: 6px;
+		}
+		.nav-pills li.square a {
+			border: 3px solid #FFFFFF;
+			border-radius: 0px 0px 0px 0px;
+			padding-left: 0px;
+			padding-right: 0px;
+			padding-bottom: 0px;
+			padding-top: 0px;
+			margin-right: 0px;
+			margin-bottom: 0px;
+			margin-top: 0px;
 		}
 	</style>
 </head>
 <body>
-  <table class="table table-bordered">
-    <tr><th><h2>PTT日報</h2></th></tr>
-	<tr><th><pre>
-app名稱：PTT日報
-適用族群：大忙人或跟<a href="mailto:tony77794@gmail.com">tonypai</a>一樣的懶人
-更新頻率：每日清晨00:10:00
-功能簡述：擷取前一日PTT特定板塊推文數大於30之文章
-開發緣起：
-　　因為最近開始忙論文... (騙誰啊!)
-　　所以想說可以利用抓取前一日精華的方式保存文章
-　　待之後有空再一口氣看完這樣
-　　分享給大家 如果有bug也請不吝回復喔 :)
-</pre></th></tr>
-    <tr><th>
-    	<div class="container">
-		<div class="row">
-			{{#data}}
-				<div class="span3">
-					<h3>
-						<a href="/{{timestamp}}">{{date}}</a>
-					</h3>
-				</div>
-			{{/data}}
+	<div class="container">
+		<div class="offset2 span8">
+			<p class="header"><a href="#">PTT日報</a></p>
+			<table class="table">
+				<tr><th>
+					<ul class="nav nav-pills">
+						{{#data}}
+							<li class="square">
+								<a href="/{{timestamp}}">
+									<div class="dated">{{d}}</div>
+									<div class="datem">{{m}}</div>
+									<div class="datey">{{y}}</div>
+								</a>
+							</li>
+						{{/data}}
+					</ul>
+				</th></tr>
+			</table>
 		</div>
-		</div>
-    </th></tr>
-  </table>
-  <a href="#" class="scrollup">Scroll</a>
-  <script type="text/javascript">
-    $(document).ready(function(){ 
- 
-        $(window).scroll(function(){
-            if ($(this).scrollTop() > 100) {
-                $('.scrollup').fadeIn();
-            } else {
-                $('.scrollup').fadeOut();
-            }
-        }); 
- 
-        $('.scrollup').click(function(){
-            $("html, body").animate({ scrollTop: 0 }, 600);
-            return false;
-        });
- 
-    });
-</script>
+	</div>
 </body>

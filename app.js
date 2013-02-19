@@ -1,22 +1,48 @@
 var http = require('http'),
-  	util = require('util'),
-  	mu   = require('mu2'),
-  	jsdom = require('jsdom'),
-    $ = require('jquery'),
+	util = require('util'),
+	director = require('director'),
+	send = require('send'),
+	url  = require('url'),
+	mu   = require('mu2'),
+	jsdom = require('jsdom'),
+	$ = require('jquery'),
 	async = require('async'),
-    director = require('director'),
-    cronJob = require('cron').CronJob,
+	cronJob = require('cron').CronJob,
+	fc = require('./libs/funcs'),
+	rd = require('./libs/renderer'),
 	
-	dbname = "ptt_boards", //custom
-	dbport = 3001; //custom
-    mongodb = require('mongodb'),
-    mongodbServer = new mongodb.Server('localhost', dbport, { safe: false }),
-	boards = ["Beauty", "movie", "StupidClown", "joke", "C_Chat"], //custom
-	beforeDays = 1, //custom
-	pushIWant = 30, //custom
-	cronTime = "00 10 00 * * *"; //custom
+	//database settigns
+	dbserver = "localhost",
+	dbport = 3001,
+	dbname = "ptt_boards",
+	mongodb = require('mongodb'),
+	mongodbServer = new mongodb.Server(dbserver, dbport, { safe: false }),
+
+	//server settings
+	svrport = 977,
+
+	//cronjob settings
+	boards = [
+		"Beauty",
+		"movie",
+		"StupidClown",
+		"joke",
+		"C_Chat"
+	],
+	cronTime = "00 00 03 * * *",
+	beforeDays = 1,
+	pushIWant = 30,
+
+	//encode converter settings
+	domain = "your-domain-name.here",
+	path = "/middle-urls",
+	converter_url = "http://" + domain + path + "/converter.php",
+	file_get_contents = "http://" + domain + path + "/file_get_contents.php?url=";
+	remote_data_source = "http://remote-domain-name.here/";
 	
-mu.root = __dirname + '/templates'
+var router = new director.http.Router();
+
+mu.root = __dirname + '/templates';
 
 var fullDate;
 var postArray;
@@ -27,58 +53,58 @@ var initialVars = function() {
 	var yesterday = today - 86400 * 1000 * beforeDays;
 	var month = new Date(yesterday).getMonth() + 1;
 	var day = new Date(yesterday).getDate();
-	var date = month + "/" + patchZero(day, 2);
+	var date = month + "/" + fc.patchZero(day, 2);
 	fullDate = new Date(yesterday).getFullYear()+"/"+date;
 	postArray = [];
 };
 
 var collection;
-new mongodb.Db(dbname, mongodbServer, {}).open(function (error, client) {
+new mongodb.Db(dbname, mongodbServer, {w: 1}).open(function (error, client) {
 	if (error) throw error;
 	collection = new mongodb.Collection(client, 'posts');
+	console.log("------------------------------------------")
+	console.log("Crawlptt working at port "+svrport)
 	//first fetching
 	//initialVars();
 	//routine();
 });
 
 http.createServer(function (req, res) {
-
 	mu.clearCache();
-	
+	//route by director
 	router.dispatch(req, res, function (err) {
-      if (err) {
-        res.writeHead(404);
-        res.end();
-      }
-    });
+		if (err) {
+			res.writeHead(404);
+			res.end();
+		}
+	});
+}).listen(svrport);
 
-}).listen(8000);
-
-var router = new director.http.Router();
+router.get('/\/assets[^*]*/', function() {
+	send(this.req, url.parse(this.req.url).pathname).root(__dirname+"/templates").pipe(this.res);
+})
 
 router.get('/', function() {
 	var res = this.res;
-
 	var tmpArr = [];
 	var dateArr = [];
 	collection.find({}).toArray(function(err, data) {
 		$.each(data, function(key, val) {
-
 			if(val.date != undefined) {
 				tmpArr.push(val.date);
 			}
-
 			if(key == data.length - 1) {
-
-				tmpArr = getUnique(tmpArr).sort(desc);
-
+				tmpArr = fc.getUnique(tmpArr).sort(fc.desc);
 				$.each(tmpArr, function(k, v) {
-
-					dateArr.push({date: v, timestamp: toTimestamp(v)});
-					
+					dateArr.push({
+						y: fc.divDate(v)["y"],
+						m: fc.monthDigitToEn(fc.divDate(v)["m"]),
+						d: fc.divDate(v)["d"],
+						timestamp: fc.toTimestamp(v)
+					});
 					if(k == tmpArr.length - 1) {
 						var stream = mu.compileAndRender('index.html', {data: dateArr});
-						util.pump(stream, res);
+						stream.pipe(res);
 					}
 				})
 			}
@@ -88,207 +114,209 @@ router.get('/', function() {
 
 router.get('/:timestamp', function(ts) {
 	var res = this.res;
-	collection.find({date: toDate(ts)}).toArray(function(err, data) {
-		$.each(data, function(key, val){ 
-			$.each(val.posts, function(k, v) {
-				var arr = v.link.split("/");
-				v.link = "/read/"+arr[arr.length-2]+"/"+arr[arr.length-1];
-				if(v.push >= 100)v.push = "<font color='red'>爆</font>";
-			})
-			if(key == data.length - 1) {
-				var stream = mu.compileAndRender('news.html', {date: toDate(ts), timestamp: ts, data: data});
-				util.pump(stream, res);
+	collection.find({date: fc.toDate(ts)}).toArray(function(err, data) {
+		async.series({
+			original: function(callback) {
+				$.each(data, function(key, val){
+					$.each(val.posts, function(k, v) {
+						var arr = v.link.split("/");
+						v.link = "/read/"+ts+"/"+arr[arr.length-2]+"/"+arr[arr.length-1];
+						if(v.push >= 100)v.push = "<font color='red'>爆</font>";
+					})
+					if(key == data.length - 1) {
+						callback(null);
+					}
+				})
+			},
+			another: function(callback) {
+				var board = "Gossiping";
+				/* another data resource url */
+				var url = remote_data_source+fc.toDate2(ts);
+				$.ajax({
+					type: "GET",
+					url: file_get_contents+url,
+					dataType: 'json',
+					success: function(json){
+						var posts = [];
+						if(json.length != 0) {
+							$.each(json, function(key, val) {
+								posts.push({
+									id: val.id,
+									link: "/read/"+ts+"/"+board+"/"+val.id,
+									title: val.title
+								});
+								if(key == json.length - 1) {
+									data.push({
+										board: board,
+										posts: posts
+									})
+								}
+							})
+						}
+						var stream = mu.compileAndRender('news.html', {date: fc.toDate(ts), timestamp: ts, data: data});
+						stream.pipe(res);
+						callback(null);
+					},
+					error: function() {
+						//console.log("Gossiping board error!")
+						var stream = mu.compileAndRender('news.html', {date: fc.toDate(ts), timestamp: ts, data: data});
+						stream.pipe(res);
+						callback(null);
+					}
+				});
 			}
-		})
+		}, function(err, results) {
+			if(err)throw err;
+		});
 	});
 });
 
-router.get('/read/:board/:article', function(board, article) {
+router.get('/read/:timestamp/:board/:article', function(ts, board, article) {
 	var res = this.res;
-	jsdom.env("http://localhost/crawl/converter.php?timestamp="+new Date().getTime()+"&board="+board+"&article="+article, function (errors, window) {
+	var title, body;
+	async.series({
+		chooseBackend: function(callback) {
+			//from djw
+			if(board == "Gossiping") {
+				/* another data resource url */
+				var url = remote_data_source+fc.toDate2(ts);
+				$.getJSON(file_get_contents+url, function(json){
+					var posts = [];
+					$.each(json, function(key, val) {
+						if(article == val.id) {
+							title = val.title;
+							body = (val.head+"/n/n"+val.full_article).replace(/\/n/g, "\n");
+							callback(null);
+						}
+					})
+				})
+			}
+			//own db
+			else {
+				jsdom.env(converter_url+"?timestamp="+new Date().getTime()+"&board="+board+"&article="+article, function (errors, window) {
 
-		var timestamp = article.match(/M.[^.A]*/)[0].replace(/M./g, "");
-        var date = toDate(timestamp);
+					var target = window.document.getElementById('mainContent');
+					if(target == null || article.search(".deleted") != -1) {
+						//console.log("Error occured: "+ts+"/"+board+"/"+article);
+						var stream = mu.compileAndRender('error.html');
+						stream.pipe(res);
+						return ;
+					} else {
+						var timestamp = article.match(/M.[^.A]*/)[0].replace(/M./g, "");
+						var date = fc.toDate(timestamp);
+						body = target.children[1].getElementsByTagName('pre')[0].innerHTML;
 
-		var target = window.document.getElementById('mainContent');
-		if(target == null) {
-			console.log("Error Occured: "+board+"/"+article);
-			var stream = mu.compileAndRender('error.html', {date: date, timestamp: timestamp});
-			util.pump(stream, res);
-			return ;
-		} else {
-			var body = target.children[1].getElementsByTagName('pre')[0].innerHTML;
-			
+						var tmp;
+						if(tmp = body.match(/標題:[^\n]*/))title = tmp[0].replace(/標題: /g, "");
+						//else title = body.match(/標題[^\n]*/)[0].replace(/標題 /g, "");
+						else title = "null";
+
+						callback(null);
+					}
+				});
+
+			}
+		},
+		renderPage: function(callback) {
+
 			//youtube player
-	        body = body.replace(/\<div><iframe class="youtube-player" type="text\/html" width="640" height="385"/g, '<div class="embed-container"><iframe type="text/html"');
-
-	        //xuite player
-	        var xuiteId = new Array();
-	        xuiteId = body.match(/vlog.xuite.net\/play\/[^"]*/);
-	        if(xuiteId) {
-	          for(var i=0;i<xuiteId.length;i++) {
-	            var id = xuiteId[i].replace("vlog.xuite.net/play/", "")
-	            var xuitePlayer = "<div class='embed-container'><iframe marginwidth='0' marginheight='0' src='http://vlog.xuite.net/embed/"+id+"?ar=0&as=0' scrolling='no' frameborder='0'></iframe></div>";
-	            body = body.replace(id+"</a>", id+"</a>\n"+xuitePlayer);
-	          }
-	        }
-
-	        //image preview
-	        $.fn.exists = function(){return this.length>0;}
-	        var imgLink = new Array();
-	        imgLink = body.match(/href="[^"]*/g);
-	        if(imgLink) {
-	          for(var i=0;i<imgLink.length;i++) {
-	            var url = imgLink[i].replace(/\href="/g, "");
-	            if($("<img src='"+url+"'>").exists()) {
-	              var appendImage;
-	              if(url.search("ppt.cc") != -1) {
-	                appendImage = url+"</a>\n<img src='"+url+"@.jpg'>";
-	              }
-	              else
-	                appendImage = url+"</a>\n<img src='"+url+"'>";
-
-	              body = body.replace(url+"</a>", appendImage);
-	            }
-	          }
-	        }
-
-	        var tmp, title;
-	        if(tmp = body.match(/標題:[^\n]*/))title = tmp[0].replace(/標題: /g, "");
-	        //else title = body.match(/標題[^\n]*/)[0].replace(/標題 /g, "");
-	        else title = "null";
+			body = rd.renderYoutubePlayer(body);
+			//xuite player
+			body = rd.renderXuitePlayer(body);
+			//image preview
+			body = rd.renderImageTag(body);
+			//ansi preview
+			body = rd.renderANSIImage(body);
+			//clean the comments
+			body = rd.renderNoDateComments(body);
+			//filter the broken ANSI
+			body = rd.filterBrokenANSI(body);
 
 			var stream = mu.compileAndRender('read.html', {
-				date: date,
-				timestamp: timestamp,
+				date: fc.toDate(ts),
+				timestamp: ts,
 				board: board,
 				title: title,
 				article: article,
 				body: body
 			});
-			util.pump(stream, res);
-		}
-	});
+			stream.pipe(res);
+			callback(null);
+		},
+	})
 });
 
 var fetchPosts = function(url, callback) {
-  	
-  	var stop = false;  	
 
-  	jsdom.env("http://localhost/crawl/converter.php?timestamp="+new Date().getTime()+"&url="+url, function (errors, window) {
+	var stop = false;
+	jsdom.env(converter_url+"?timestamp="+new Date().getTime()+"&url="+url, function (errors, window) {
+		var arr = window.document.getElementById('prodlist').children[1].getElementsByTagName('dd');
+		for(var i=arr.length-1;i>=0;i--) {
+			var attrs = $(arr[i]).find("td"); // id|push|date|author|title
+			var link = $(attrs[5]).find("a").prop("href").replace("localhost", "www.ptt.cc");
+			//console.log(link);
 
-      var arr = window.document.getElementById('prodlist').children[1].getElementsByTagName('dd');
+			if(link.search(".deleted") == -1) {
+				var postDate = fc.toDate(link.match(/M.[^.]*/)[0].replace(/M./g, ""));
+				//console.log("post date:"+postDate+"|full date:"+fullDate);
 
-      for(var i=arr.length-1;i>=0;i--) {
+				if(fc.toTimestamp(postDate) < fc.toTimestamp(fullDate)) {
+					stop = true;
+					postArray.push(postsInBoard);
+					callback(null);
+					return ;
+				}
+				else if(fc.toTimestamp(postDate) > fc.toTimestamp(fullDate)) {
+					stop = false;
+				}
+				else {
+					var id = $(attrs[0]).html();
+					var push = ($(attrs[2]).html()==' ')?'0':$(attrs[2]).html();
+					var title = $(attrs[5]).find("a").html();
+					if(push >= pushIWant && title.search("刪除") == -1) {
+						//console.log("push entry "+id);
 
-        var attrs = $(arr[i]).find("td"); // id|push|date|author|title
-        var link = $(attrs[5]).find("a").prop("href").replace("localhost", "www.ptt.cc");
-        //console.log(link);
-
-        if(link.search(".deleted") == -1) {
-          var postDate = toDate(link.match(/M.[^.]*/)[0].replace(/M./g, ""));
-          //console.log("post date:"+postDate+"|full date:"+fullDate);
-        }
-        
-        if(toTimestamp(postDate) < toTimestamp(fullDate)) {
-          stop = true;
-          postArray.push(postsInBoard);
-          callback(null);
-          return ;
-        }
-        else if(toTimestamp(postDate) > toTimestamp(fullDate)) {
-          stop = false;
-        }
-        else {
-          var id = $(attrs[0]).html();
-          var push = ($(attrs[2]).html()==' ')?'0':$(attrs[2]).html();
-          var title = $(attrs[5]).find("a").html();
-          if(push >= pushIWant && title.search("刪除") == -1) {
-            //console.log("push entry "+id);
-            postsInBoard["posts"].push({
-				"id": id,
-				"push": push,
-				"link": link,
-				"title": title
-			});
-          }
-        }
-      }
-      if(totalPage == 0) {
-        totalPage = window.document.getElementById('prodlist').children[0].innerHTML.match(/ [0-9]{3,4} /)[0].replace(/ /g, "");
-      }
-      totalPage -= 1;
-	
-	  //rescursive
-      if(stop == false) {
-        fetchPosts(url.split("index")[0]+"index"+totalPage+".html", callback);
-        //console.log(url.split("index")[0]+"index"+totalPage+".html");
-      }
-    }
-  );
+						postsInBoard["posts"].push({
+							"id": id,
+							"push": push,
+							"link": link,
+							"title": title
+						});
+					}
+				}
+			}
+		}
+		if(totalPage == 0) {
+			totalPage = window.document.getElementById('prodlist').children[0].innerHTML.
+			match(/ [0-9]{3,4} /)[0].
+			replace(/ /g, "");
+		}
+		totalPage -= 1;
+		//rescursive
+		if(stop == false) {
+			fetchPosts(url.split("index")[0]+"index"+totalPage+".html", callback);
+			//console.log(url.split("index")[0]+"index"+totalPage+".html");
+		}
+	});
 };
-
-var desc = function(x,y) {
-	if (x > y) 
-	return -1;
-	if (x < y) 
-	return 1;
-};
-
-var patchZero = function(num, offset) {
-  var min = Math.pow(10, offset-1)
-  var tmp = num;
-  while(tmp < min) {
-    num = "0"+num;
-    tmp *= 10;
-  }
-  return num;
-};
-
-var toTimestamp = function(date) {
-  return Date.parse(date) / 1000;
-};
-
-var toDate = function(timestamp) {
-  var ts = timestamp * 1000;
-  return new Date(ts).getFullYear()+"/"+
-  (new Date(ts).getMonth()+1)+"/"+
-  patchZero(new Date(ts).getDate(), 2);
-};
-
-var daysInMonth = function(month, year) {
-  return new Date(year, month, 0).getDate();
-};
-
-var getUnique = function(arr) {
-    var que = [];
-    for(var i = 0; i < arr.length; i++) {
-        for(var j = i + 1; j < arr.length; j++) {
-          if(arr[i] === arr[j]) j = ++i;
-        }
-        que.push(arr[i]);
-    }
-    return que;
-};
-
 
 var cronJob = require('cron').CronJob;
 try {
-  new cronJob({
-    cronTime: cronTime,
-	    onTick: function() {
-	    	routine();
-	    },
-    start: true,
-    timeZone: "Asia/Taipei"
-  })
+	new cronJob({
+		cronTime: cronTime,
+		onTick: function() {
+			routine();
+		},
+		start: true,
+		timeZone: "Asia/Taipei"
+	})
 } catch(ex) {
-    console.log("Cron pattern not valid");
+	console.log("Cron pattern not valid");
 }
 
 var routine = function() {
 	async.series({
-		zero: function dbCheck(callback) {
+		dbcheck: function (callback) {
 			console.log("------------------------------------------")
 			console.log("Start to check database...")
 			collection.find({}).toArray(function(error, data) {
@@ -302,11 +330,10 @@ var routine = function() {
 				callback(null);
 			});
 		},
-		one: function(callback){
+		fetchposts: function(callback){
 			initialVars();
 
 			async.forEachSeries(boards, function(board, callback){
-
 				totalPage = 0;
 				postsInBoard = {
 					"date": fullDate,
@@ -320,13 +347,21 @@ var routine = function() {
 				callback(null);
 			});
 		},
-		two: function(callback){
+		intodb: function(callback){
 
 			console.log("------------------------------------------")
-			$.each(postArray, function(key, val) {
+			async.forEachSeries(postArray, function(val, callback) {
 				console.log("Update "+val.posts.length+" posts into "+val.board);
-				collection.insert(val);
-				if(key == postArray.length - 1)callback(null);
+				collection.insert(val, function(err, data) {
+					if (data) {
+						console.log('Successfully Insert');
+					} else {
+						console.log('Failed to Insert');
+					}
+					callback(null)
+				});
+			}, function(err) {
+				callback(null)
 			})
 		},
 	}, function(err, results) {
